@@ -1,8 +1,8 @@
-define(['store/JsonRest'], function(JsonRest){
+define(['store/JsonRest', '../../lib/util'], function(JsonRest, lang){
 
   xhrProto = {
     request: {
-      headers: {}
+        headers: {}
     },
     open: function() {},
     setRequestHeader: function(name, value){
@@ -53,6 +53,10 @@ define(['store/JsonRest'], function(JsonRest){
       var store = new JsonRest({});
       expect(store instanceof JsonRest).toBeTruthy();
     });
+    it("mixes in instance properties in the constructor", function(){
+      var store = new JsonRest({ target: "/thetarget" });
+      expect(store.target).toBe("/thetarget");
+    });
     
     it("makes requests when you query", function(){
       var ajaxSpy = spyOn($, "ajax").andCallFake(function(options){
@@ -83,5 +87,7 @@ define(['store/JsonRest'], function(JsonRest){
     });
     
   });
+  
+  
 
 });

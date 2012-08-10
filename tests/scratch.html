@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Jasmine Spec Runner</title>
+	<script type="text/javascript" src="./lib/require.js"></script>
+
+	<script type="text/javascript">
+		require.config(
+			{
+			  baseUrl : '..',
+				paths: {
+				  'dollar': './tests/lib/zepto',
+				  'store': '.',
+				  'spec': './tests/spec'
+				}
+			}
+		);
+		require([
+			//include all specs to be run
+			'../lib/util'
+		],
+			function(lang) {
+				console.log("lang: ", lang);
+				
+				function Thing(arg){}
+				Thing.prototype.nameOf = function(){
+				  return "Thing";
+				}
+				Thing.extend = lang.extend;
+				
+				var SubThing = Thing.extend({
+				  nameOf: function(){
+				    return "SubThing";
+				  }
+				});
+				
+				console.log("subthing: ", (new SubThing).nameOf() );
+			});
+	</script>
+</head>
+
+<body>
+</body>
+</html>

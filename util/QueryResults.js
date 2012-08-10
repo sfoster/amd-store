@@ -35,7 +35,13 @@ var QueryResults = function(results){
 	}
 	// if it is a promise it may be frozen
 	if(results.then){
-		results = lang.create(results);
+		results = (function(obj){
+		  var nobj = Object.create(results);
+		  for(var i in obj){
+		    nobj[i] = obj[i];
+		  }
+		  return nobj;
+		})(results);
 	}
 	function addIterativeMethod(method){
 	  var array = Array.prototype;

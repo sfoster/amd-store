@@ -5,7 +5,14 @@ define(["./lib/promisedAjax", "./lib/util", "./util/QueryResults" /*=====, "./ap
 //    store/JsonRest
 //  summary:
 //    The module defines a JSON/REST based object store
-function JsonRest(options) {}
+function JsonRest(options) {
+	// summary:
+	//		This is a basic store for RESTful communicating with a server through JSON
+	//		formatted data.
+	// options: dojo/store/JsonRest
+	//		This provides any configuration information that will be mixed into the store
+	lang.mixin(this, options);
+}
 JsonRest.extend = lang.extend;
 
 lang.mixin(JsonRest.prototype, {
@@ -13,14 +20,6 @@ lang.mixin(JsonRest.prototype, {
 	//		This is a basic store for RESTful communicating with a server through JSON
 	//		formatted data. It implements dojo.store.api.Store.
 
-	constructor: function(options){
-		// summary:
-		//		This is a basic store for RESTful communicating with a server through JSON
-		//		formatted data.
-		// options: dojo/store/JsonRest
-		//		This provides any configuration information that will be mixed into the store
-		lang.mixin(this, options);
-	},
 	// target: String
 	//		The target base URL to use for all requests to the server. This string will be
 	// 	prepended to the id to generate the URL (relative or absolute) for requests
@@ -135,7 +134,7 @@ lang.mixin(JsonRest.prototype, {
 		}
 		var hasQuestionMark = this.target.indexOf("?") > -1;
 		if(query && typeof query == "object"){
-			query = xhr.objectToQuery(query);
+			query = $.param(query);
 			query = query ? (hasQuestionMark ? "&" : "?") + query: "";
 		}
 		if(options && options.sort){

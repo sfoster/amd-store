@@ -1,16 +1,14 @@
-define(["../_base/xhr", "../json", "../_base/declare", "./util/QueryResults" /*=====, "./api/Store" =====*/
-], function(xhr, JSON, declare, QueryResults /*=====, Store =====*/){
+define(["./lib/promisedAjax", "./lib/util", "./util/QueryResults" /*=====, "./api/Store" =====*/
+], function($, lang, QueryResults /*=====, Store =====*/){
 
 //  module:
-//    dojo/store/JsonRest
+//    store/JsonRest
 //  summary:
 //    The module defines a JSON/REST based object store
+function JsonRest(options) {}
+JsonRest.extend = lang.extend;
 
-// No base class, but for purposes of documentation, the base class is dojo/store/api/Store
-var base = null;
-/*===== base = Store; =====*/
-
-return declare("dojo.store.JsonRest", base, {
+lang.mixin(JsonRest.prototype, {
 	// summary:
 	//		This is a basic store for RESTful communicating with a server through JSON
 	//		formatted data. It implements dojo.store.api.Store.
@@ -21,7 +19,7 @@ return declare("dojo.store.JsonRest", base, {
 		//		formatted data.
 		// options: dojo/store/JsonRest
 		//		This provides any configuration information that will be mixed into the store
-		declare.safeMixin(this, options);
+		lang.mixin(this, options);
 	},
 	// target: String
 	//		The target base URL to use for all requests to the server. This string will be
@@ -49,9 +47,9 @@ return declare("dojo.store.JsonRest", base, {
 		//		The object in the store that matches the given id.
 		var headers = options || {};
 		headers.Accept = this.accepts;
-		return xhr("GET", {
+		return $.ajax({
 			url:this.target + id,
-			handleAs: "json",
+			dataType: "json",
 			headers: headers
 		});
 	},
@@ -79,10 +77,11 @@ return declare("dojo.store.JsonRest", base, {
 		options = options || {};
 		var id = ("id" in options) ? options.id : this.getIdentity(object);
 		var hasId = typeof id != "undefined";
-		return xhr(hasId && !options.incremental ? "PUT" : "POST", {
+		return $.ajax({
+		    type: hasId && !options.incremental ? "PUT" : "POST",
 				url: hasId ? this.target + id : this.target,
-				postData: JSON.stringify(object),
-				handleAs: "json",
+				data: object,
+				dataType: "json",
 				headers:{
 					"Content-Type": "application/json",
 					Accept: this.accepts,
@@ -109,7 +108,8 @@ return declare("dojo.store.JsonRest", base, {
 		//		Deletes an object by its identity. This will trigger a DELETE request to the server.
 		// id: Number
 		//		The identity to use to delete the object
-		return xhr("DELETE",{
+		return $.ajax({
+		  type: 'DELETE',
 			url:this.target + id
 		});
 	},
@@ -127,8 +127,9 @@ return declare("dojo.store.JsonRest", base, {
 		options = options || {};
 
 		if(options.start >= 0 || options.count >= 0){
-			headers.Range = headers["X-Range"] //set X-Range for Opera since it blocks "Range" header
-				 = "items=" + (options.start || '0') + '-' +
+		  //set X-Range for Opera since it blocks "Range" header
+			headers.Range = headers["X-Range"] = "" + 
+				"items=" + (options.start || '0') + '-' +
 				(("count" in options && options.count != Infinity) ?
 					(options.count + (options.start || 0) - 1) : '');
 		}
@@ -148,17 +149,20 @@ return declare("dojo.store.JsonRest", base, {
 				query += ")";
 			}
 		}
-		var results = xhr("GET", {
-			url: this.target + (query || ""),
-			handleAs: "json",
-			headers: headers
-		});
-		results.total = results.then(function(){
-			var range = results.ioArgs.xhr.getResponseHeader("Content-Range");
-			return range && (range=range.match(/\/(.*)/)) && +range[1];
-		});
+    var results = $.ajax({
+      type: "GET",
+      url: this.target + (query || ""),
+      dataType: "json",
+      headers: headers,
+    });
+    results.total = results.then(function(){
+      console.log(results);
+      var range = results.xhr.getResponseHeader("Content-Range");
+      return range && (range = range.match(/\/(.*)/)) && +range[1];
+    });
 		return QueryResults(results);
 	}
 });
 
+return JsonRest;
 });

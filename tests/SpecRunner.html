@@ -13,6 +13,7 @@
 			{
 			  baseUrl : '..',
 				paths: {
+				  'dollar': './tests/lib/zepto',
 				  'store': '.',
 				  'spec': './tests/spec'
 				}
@@ -21,7 +22,8 @@
 		require([
 			//include all specs to be run
 			'spec/StoreSpec',
-			'spec/ObservableSpec'
+			'spec/ObservableSpec',
+			'spec/JsonRestSpec'
 		],
 			function() {
 				//run tests

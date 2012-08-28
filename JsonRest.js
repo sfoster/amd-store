@@ -11,6 +11,7 @@ function JsonRest(options) {
 	//		formatted data.
 	// options: dojo/store/JsonRest
 	//		This provides any configuration information that will be mixed into the store
+	this.headers = {};
 	lang.mixin(this, options);
 }
 JsonRest.extend = lang.extend;
@@ -20,15 +21,23 @@ lang.mixin(JsonRest.prototype, {
 	//		This is a basic store for RESTful communicating with a server through JSON
 	//		formatted data. It implements dojo.store.api.Store.
 
+	// headers: Object
+	// Additional headers to pass in all requests to the server. These can be overridden
+	// by passing additional headers to calls to the store.
+	headers: {},
+
+
 	// target: String
 	//		The target base URL to use for all requests to the server. This string will be
 	//	prepended to the id to generate the URL (relative or absolute) for requests
 	//	sent to the server
 	target: "",
+	
 	// idProperty: String
 	//		Indicates the property to use as the identity property. The values of this
 	//		property should be unique.
 	idProperty: "id",
+	
 	// sortParam: String
 	//		The query parameter to used for holding sort information. If this is omitted, than
 	//		the sort information is included in a functional query token to avoid colliding 
@@ -54,9 +63,11 @@ lang.mixin(JsonRest.prototype, {
 			headers: headers
 		});
 	},
+
 	// accepts: String
 	//		Defines the Accept header to use on HTTP requests
 	accepts: "application/javascript, application/json", 
+
 	getIdentity: function(object){
 		// summary:
 		//		Returns an object's identity
@@ -65,6 +76,7 @@ lang.mixin(JsonRest.prototype, {
 		//	returns: Number
 		return object[this.idProperty];
 	},
+
 	put: function(object, options){
 		// summary:
 		//		Stores an object. This will trigger a PUT request to the server
@@ -83,12 +95,12 @@ lang.mixin(JsonRest.prototype, {
 				url: hasId ? this.target + id : this.target,
 				data: object,
 				dataType: "json",
-				headers:{
+				headers: lang.mixin({
 					"Content-Type": "application/json",
 					Accept: this.accepts,
 					"If-Match": options.overwrite === true ? "*" : null,
 					"If-None-Match": options.overwrite === false ? "*" : null
-				}
+				}, this.headers, options.headers)
 			});
 	},
 	add: function(object, options){
@@ -128,8 +140,9 @@ lang.mixin(JsonRest.prototype, {
 		//		The optional arguments to apply to the resultset.
 		//	returns: Store.QueryResults
 		//		The results of the query, extended with iterative methods.
-		var headers = {Accept: this.accepts};
 		options = options || {};
+
+		var headers = lang.mixin({ Accept: this.accepts }, this.headers, options.headers);
 
 		if(options.start >= 0 || options.count >= 0){
 			//set X-Range for Opera since it blocks "Range" header
@@ -161,7 +174,6 @@ lang.mixin(JsonRest.prototype, {
 			headers: headers
 		});
 		results.total = results.then(function(){
-			console.log(results);
 			var range = results.xhr.getResponseHeader("Content-Range");
 			return range && (range = range.match(/\/(.*)/)) && +range[1];
 		});

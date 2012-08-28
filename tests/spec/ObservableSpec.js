@@ -65,11 +65,12 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       expect(results().length).toBe(3);
       
       var changes = [], secondChanges = [];
+      //  TODO: fix resolve ko subscribe callback with Observable's params: 
       //  observable.subscribe(callback, callbackTarget, event) 
-      var subcription = results.subscribe(function(object, previousIndex, newIndex){
+      var subscription = results.subscribe(function(object, previousIndex, newIndex){
         changes.push({previousIndex:previousIndex, newIndex:newIndex, object:object});
       });
-      var secondObserver = results.subscribe(function(object, previousIndex, newIndex){
+      var secondSubscription = results.subscribe(function(object, previousIndex, newIndex){
         secondChanges.push({previousIndex:previousIndex, newIndex:newIndex, object:object});
       });
       var expectedChanges = [],
@@ -90,7 +91,7 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
           }
         });
       expectedSecondChanges.push(expectedChanges[expectedChanges.length - 1]);
-      secondObserver.cancel();
+      secondSubscription.dispose();
       var one = store.get(1);
       one.prime = true;
       store.put(one); // should add it
@@ -130,7 +131,7 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
         });
       expect(results().length).toBe(3);
       
-      subcription.dispose(); // shouldn't get any more calls
+      subscription.dispose(); // shouldn't get any more calls
       store.add({// should not be added
         id:11, name:"eleven", prime:true
       });

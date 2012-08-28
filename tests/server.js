@@ -13,12 +13,19 @@ app.configure(function(){
 });
 
 function handleJsonRest(req, resp){
+  var headers = {};
+  // $data["headers"][strtr(strtolower(substr($key, 5)), "_", "-")] = $value;
+  var hname; 
+  for(var name in req.headers) {
+    hname = (name.indexOf("HTTP_") === 0) ? 
+        name.substring(5).replace(/_/g, '-').toLowerCase() :
+        name.toLowerCase();
+    console.log("Adding header: ", name, hname);
+    headers[hname] = req.headers[name];
+  }
   var data = {
     "method": req.method,
-    "headers": req.headers,
-    // if(strpos($key, "HTTP_") === 0){
-    //  $data["headers"][strtr(strtolower(substr($key, 5)), "_", "-")] = $value;
-    // }
+    "headers": headers,
     "content": ''
   };
   req.on('data', function(buf){

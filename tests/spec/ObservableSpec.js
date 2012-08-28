@@ -29,8 +29,8 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       }));
       var changes = [], results = store.query({ prime: true });
 
-      expect(results).toBeTruthy();
-      expect(typeof results.observe).toBe('function');
+      expect(results && results()).toBeTruthy();
+      expect(typeof results.subscribe).toBe('function');
       
     });
   
@@ -62,21 +62,22 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
     
     it("Query-s", function testQuery(){
       var results = store.query({prime: true});
-      expect(results.length).toBe(3);
+      expect(results().length).toBe(3);
       
       var changes = [], secondChanges = [];
-      var observer = results.observe(function(object, previousIndex, newIndex){
+      //  observable.subscribe(callback, callbackTarget, event) 
+      var subcription = results.subscribe(function(object, previousIndex, newIndex){
         changes.push({previousIndex:previousIndex, newIndex:newIndex, object:object});
       });
-      var secondObserver = results.observe(function(object, previousIndex, newIndex){
+      var secondObserver = results.subscribe(function(object, previousIndex, newIndex){
         secondChanges.push({previousIndex:previousIndex, newIndex:newIndex, object:object});
       });
       var expectedChanges = [],
         expectedSecondChanges = [];
-      var two = results[0];
+      var two = results()[0];
       two.prime = false;
       store.put(two); // should remove it from the array
-      expect(results.length).toBe(2);
+      expect(results().length).toBe(2);
       
       expectedChanges.push({
           previousIndex: 0,
@@ -102,17 +103,17 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
             prime: true
           }
         });
-      expect(results.length).toBe(3);
+      expect(results().length).toBe(3);
       
       store.add({// shouldn't be added
         id:6, name:"six"
       });
-      expect(results.length).toBe(3);
+      expect(results().length).toBe(3);
       
       store.add({// should be added
         id:7, name:"seven", prime:true
       });
-      expect(results.length).toBe(4);
+      expect(results().length).toBe(4);
       
       expectedChanges.push({
           previousIndex: -1,
@@ -127,9 +128,9 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
           newIndex: -1,
           object: {id: 3, name: "three", prime: true}
         });
-      expect(results.length).toBe(3);
+      expect(results().length).toBe(3);
       
-      observer.remove(); // shouldn't get any more calls
+      subcription.dispose(); // shouldn't get any more calls
       store.add({// should not be added
         id:11, name:"eleven", prime:true
       });
@@ -139,8 +140,8 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
 
     it("Handles queries with zero id", function testQueryWithZeroId(){
       var results = store.query({});
-      expect(results.length).toBe(8);
-      var observer = results.observe(function(object, previousIndex, newIndex){
+      expect(results().length).toBe(8);
+      var observer = results.subscribe(function(object, previousIndex, newIndex){
               // we only do puts so previous & new indices must always been the same
               // unfortunately if id = 0, the previousIndex
               console.log("called with: "+previousIndex+", "+newIndex);
@@ -153,34 +154,34 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
     it("Pages through results", function testPaging(t){
       var results, opts = {count: 25, sort: [{attribute: "order"}]};
       results = window.results = [
-          bigStore.query({}, lang.create(opts, {start: 0})),
-          bigStore.query({}, lang.create(opts, {start: 25})),
-          bigStore.query({}, lang.create(opts, {start: 50})),
-          bigStore.query({}, lang.create(opts, {start: 75}))
+          bigStore.query({}, lang.extend(Object.create(opts), {start: 0})),
+          bigStore.query({}, lang.extend(Object.create(opts), {start: 25})),
+          bigStore.query({}, lang.extend(Object.create(opts), {start: 50})),
+          bigStore.query({}, lang.extend(Object.create(opts), {start: 75}))
       ];
       var observations = [];
       results.forEach(function(r, i){
-          r.observe(function(obj, from, to){
+          r.subscribe(function(obj, from, to){
             observations.push({from: from, to: to});
               console.log(i, " observed: ", obj, from, to);
           }, true);
       });
 
       bigStore.add({id: 101, name: "one oh one", order: 2.5});
-      expect(results[0].length).toBe(26);
-      expect(results[1].length).toBe(25);
-      expect(results[2].length).toBe(25);
-      expect(results[3].length).toBe(25);
+      expect(results()[0].length).toBe(26);
+      expect(results()[1].length).toBe(25);
+      expect(results()[2].length).toBe(25);
+      expect(results()[3].length).toBe(25);
       expect(observations.length).toBe(1);
       
       bigStore.remove(101);
       expect(observations.length).toBe(2);
-      expect(results[0].length).toBe(25);
+      expect(results()[0].length).toBe(25);
 
       bigStore.add({id: 102, name: "one oh two", order: 26.5});
-      expect(results[0].length).toBe(25);
-      expect(results[1].length).toBe(26);
-      expect(results[2].length).toBe(25);
+      expect(results()[0].length).toBe(25);
+      expect(results()[1].length).toBe(26);
+      expect(results()[2].length).toBe(25);
       expect(observations.length).toBe(3);
     });
   });

@@ -20,7 +20,6 @@ function handleJsonRest(req, resp){
     hname = (name.indexOf("HTTP_") === 0) ? 
         name.substring(5).replace(/_/g, '-').toLowerCase() :
         name.toLowerCase();
-    console.log("Adding header: ", name, hname);
     headers[hname] = req.headers[name];
   }
   var data = {

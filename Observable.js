@@ -6,9 +6,11 @@ define(["lang", "./lib/promise", "knockout" /*=====, "./api/Store" =====*/
 // summary:
 //		TODOC
 
-function before(originalFn, beforeFn) {
-	beforeFn.apply(this, arguments);
-	return originalFn.apply(this, arguments);
+function before(originalFn, beforeFn, ctx) {
+	return function(){
+		beforeFn.apply(ctx||this, arguments);
+		return originalFn.apply(ctx||this, arguments);
+	};
 }
 
 var Observable = function(/*Store*/ store){
@@ -162,7 +164,7 @@ var Observable = function(/*Store*/ store){
 				
 				// ko's subscribable gives back a subscription handle object, with a dispose method
 				// hook into that to do our own cleanup
-				var subscription = originalSubscribe.call(observedResults, callback, callbackTarget, event);
+				var subscription = originalSubscribe.call(this, callback, callbackTarget, event);
 				
 				subscription.dispose = before(subscription.dispose, function(){
 					// remove this listener

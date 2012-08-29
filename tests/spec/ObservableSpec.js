@@ -1,5 +1,6 @@
 define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemoryStore, ObservableStore, lang){
 
+  // Tests modified to expect the subscribe to get results array, details
   var testData = [
     {id: 1, name: "one", prime: false},
     {id: 2, name: "two", even: true, prime: true},
@@ -65,18 +66,23 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       expect(results().length).toBe(3);
       
       var changes = [], secondChanges = [];
-      //  TODO: fix resolve ko subscribe callback with Observable's params: 
-      //  observable.subscribe(callback, callbackTarget, event) 
-      var subscription = results.subscribe(function(object, previousIndex, newIndex){
-        changes.push({previousIndex:previousIndex, newIndex:newIndex, object:object});
+      //  TODO: fix resolve ko subscribe callback signature with observe signature
+      //  observable.subscribe(callback, callbackTarget, event);
+      // and callback gets: (Array)results, (Object)details = { object: object, previousIndex: n, newIndex: n }
+      //  vs.changed || removedObject, removedFrom, insertedInto 
+      var subscription = results.subscribe(function(object, details){
+        details = details || {};
+        changes.push({previousIndex:details.previousIndex, newIndex:details.newIndex, details:object});
       });
       var secondSubscription = results.subscribe(function(object, previousIndex, newIndex){
-        secondChanges.push({previousIndex:previousIndex, newIndex:newIndex, object:object});
+        details = details || {};
+        secondChanges.push({previousIndex:details.previousIndex, newIndex:details.newIndex, details:object});
       });
       var expectedChanges = [],
         expectedSecondChanges = [];
       var two = results()[0];
       two.prime = false;
+      console.log("Putting 'one' object");
       store.put(two); // should remove it from the array
       expect(results().length).toBe(2);
       
@@ -94,6 +100,7 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       secondSubscription.dispose();
       var one = store.get(1);
       one.prime = true;
+      console.log("Putting 'one' object");
       store.put(one); // should add it
       expectedChanges.push({
           previousIndex: -1,
@@ -106,11 +113,13 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
         });
       expect(results().length).toBe(3);
       
+      console.log("Adding 'six' object - shouldn't be added");
       store.add({// shouldn't be added
         id:6, name:"six"
       });
       expect(results().length).toBe(3);
       
+      console.log("Adding 'seven' object");
       store.add({// should be added
         id:7, name:"seven", prime:true
       });
@@ -123,6 +132,7 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
             id:7, name:"seven", prime:true
           }
         });
+      console.log("Removing '3' object");
       store.remove(3);
       expectedChanges.push({
           "previousIndex":0,
@@ -132,6 +142,7 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       expect(results().length).toBe(3);
       
       subscription.dispose(); // shouldn't get any more calls
+      console.log("Adding '11' object - should not be added");
       store.add({// should not be added
         id:11, name:"eleven", prime:true
       });
@@ -142,11 +153,11 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
     it("Handles queries with zero id", function testQueryWithZeroId(){
       var results = store.query({});
       expect(results().length).toBe(8);
-      var observer = results.subscribe(function(object, previousIndex, newIndex){
+      var observer = results.subscribe(function(results, details){
               // we only do puts so previous & new indices must always been the same
               // unfortunately if id = 0, the previousIndex
-              console.log("called with: "+previousIndex+", "+newIndex);
-              expect(previousIndex).toBe(newIndex);
+              console.log("called with: "+details.previousIndex+", "+details.newIndex);
+              expect(details.previousIndex).toBe(details.newIndex);
       }, true);
       store.put({id: 5, name: "-FIVE-", prime: true});
       store.put({id: 0, name: "-ZERO-", prime: false});
@@ -162,9 +173,9 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       ];
       var observations = [];
       results.forEach(function(r, i){
-          r.subscribe(function(obj, from, to){
-            observations.push({from: from, to: to});
-              console.log(i, " observed: ", obj, from, to);
+          r.subscribe(function(results, details){
+            observations.push({from: details.previousIndex, to: details.newIndex});
+              console.log(i, " observed: ", details);
           }, true);
       });
 

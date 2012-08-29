@@ -9,6 +9,15 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
     {id: 5, name: "five", prime: true}
   ];
 
+  function insistContains(obj) {
+    Array.prototype.slice.call(arguments, 1).forEach(function(name){
+      if(!obj.hasOwnProperty(name)) {
+        throw "Missing property: " + name;
+      }
+    });
+    return true;
+  }
+  
   describe("Observable Store Basics", function(){
     it("Loaded the expected constructors", function(){
       expect(typeof MemoryStore).toBe('function');
@@ -70,20 +79,25 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       //  observable.subscribe(callback, callbackTarget, event);
       // and callback gets: (Array)results, (Object)details = { object: object, previousIndex: n, newIndex: n }
       //  vs.changed || removedObject, removedFrom, insertedInto 
-      var subscription = results.subscribe(function(object, details){
-        details = details || {};
-        changes.push({previousIndex:details.previousIndex, newIndex:details.newIndex, details:object});
+      var subscription = results.subscribe(function(resultsArray, details){
+        expect(typeof details).toBe('object');
+        insistContains(details, 'previousIndex', 'newIndex', 'object');
+        changes.push({previousIndex:details.previousIndex, newIndex:details.newIndex, object:details.object});
       });
-      var secondSubscription = results.subscribe(function(object, previousIndex, newIndex){
-        details = details || {};
-        secondChanges.push({previousIndex:details.previousIndex, newIndex:details.newIndex, details:object});
+      var secondSubscription = results.subscribe(function(resultsArray, details){
+        expect(typeof details).toBe('object');
+        insistContains(details, 'previousIndex', 'newIndex', 'object');
+        secondChanges.push({previousIndex:details.previousIndex, newIndex:details.newIndex, object:details.object});
       });
       var expectedChanges = [],
         expectedSecondChanges = [];
       var two = results()[0];
       two.prime = false;
-      console.log("Putting 'one' object");
+      console.log("Setting prime to false, should update the query");
+      console.log("Results are currently: ", results());
+
       store.put(two); // should remove it from the array
+      expect("Update done, results are now: ", results());
       expect(results().length).toBe(2);
       
       expectedChanges.push({
@@ -153,10 +167,11 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
     it("Handles queries with zero id", function testQueryWithZeroId(){
       var results = store.query({});
       expect(results().length).toBe(8);
-      var observer = results.subscribe(function(results, details){
+      var observer = results.subscribe(function(resultsArray, details){
               // we only do puts so previous & new indices must always been the same
               // unfortunately if id = 0, the previousIndex
-              console.log("called with: "+details.previousIndex+", "+details.newIndex);
+              expect(typeof details).toBe('object');
+              insistContains(details, 'previousIndex', 'newIndex', 'object');
               expect(details.previousIndex).toBe(details.newIndex);
       }, true);
       store.put({id: 5, name: "-FIVE-", prime: true});
@@ -173,7 +188,9 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       ];
       var observations = [];
       results.forEach(function(r, i){
-          r.subscribe(function(results, details){
+          r.subscribe(function(resultArray, details){
+            expect(typeof details).toBe('object');
+            insistContains(details, 'previousIndex', 'newIndex', 'object');
             observations.push({from: details.previousIndex, to: details.newIndex});
               console.log(i, " observed: ", details);
           }, true);

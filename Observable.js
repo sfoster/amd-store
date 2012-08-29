@@ -62,7 +62,9 @@ var Observable = function(/*Store*/ store){
 		options = options || {};
 		var results = originalQuery.apply(this, arguments);
 		// our return value - a knockout-js Observable
-		var observedResults = ko.observableArray(results);
+		var observedResults = ko.observableArray(results), 
+		    originalSubscribe = observedResults.subscribe;
+		  
 		var registerNotifyListener;
 		
 		if(results && results.forEach){
@@ -77,27 +79,31 @@ var Observable = function(/*Store*/ store){
 			var queryExecutor = store.queryEngine && store.queryEngine(query, nonPagedOptions);
 			var queryRevision = revision;
 			var listeners = [], queryUpdater;
-			var originalSubscribe = observedResults.subscribe;
 			var updateDetails = {};
 			
-			observedResults.subscribe = before(observedResults.subscribe, function(callback, callbackTarget, event, includeObjectUpdates){
+			observedResults.subscribe = function(callback, callbackTarget, event, includeObjectUpdates){
 				// Knockout's observables use a subscribe method to register a callback for any changes to the results
 				//  that callback expects the new value(s) as its first argumen
 			
 				// on the *first call only* , hook up our listener for notifications of changes in the store
-				if(listeners.length === 0) {
+				if(listeners.length <= 0) {
 					// we can get notified of changes to a result item as well as the resultset 
 					includeObjectUpdates = includeObjectUpdates || callback.includeObjectUpdates; 
 
-					var listener = function(object, previousIndex, newIndex){
+					var listener = function(object, previousIndex, newIndex, resultsArray){
 						updateDetails.object = object; 
 						updateDetails.previousIndex = previousIndex; 
 						updateDetails.newIndex = newIndex;
+						console.log("updater-listener, setting updateDetails: ", updateDetails);
+						// TODO: can use the previousIndex/newIndex to optimize this: maybe we can just push/pop or splice a single item
+						observedResults.splice.apply(observedResults, [0, resultsArray.length].concat(resultsArray));
 					};
-
+					listeners.push(listener);
+					
 					// first listener was added, create the query checker and updater
 					queryUpdaters.push(queryUpdater = function(changed, existingId){
 						Deferred.when(results, function(resultsArray){
+							console.log("queryUpdater: ", changed, existingId);
 							var atEnd = resultsArray.length != options.count;
 							var i, l, listener;
 							if(++queryRevision != revision){
@@ -149,7 +155,7 @@ var Observable = function(/*Store*/ store){
 									(includeObjectUpdates || !queryExecutor || (removedFrom != insertedInto))){
 								var copyListeners = listeners.slice();
 								for(i = 0;listener = copyListeners[i]; i++){
-									listener(changed || removedObject, removedFrom, insertedInto);
+									listener(changed || removedObject, removedFrom, insertedInto, resultsArray);
 								}
 							}
 						});
@@ -159,7 +165,8 @@ var Observable = function(/*Store*/ store){
 				
 				// wrap the callback to also pass in the update details to any subcriber to this observable
 				callback = lang.wrap(callback, function(callback, resultsArray){
-					callback.call(this, resultsArray, updateDetails);
+					console.log("subscriber callback, updateDetails: ", updateDetails);
+					return callback.call(this, resultsArray, updateDetails);
 				});
 				
 				// ko's subscribable gives back a subscription handle object, with a dispose method
@@ -179,7 +186,7 @@ var Observable = function(/*Store*/ store){
 				});
 				
 				return subscription;
-			});
+			};
 		}
 		Deferred.when(results, function(arrayResults){
 			// put results in there and hook up subscribers when we have them

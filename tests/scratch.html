@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Jasmine Spec Runner</title>
+  <title>Scratch</title>
 </head>
 
 <body>
-  <h1>Meals</h1>
+  <h1>Meals (<span data-bind="text:test"></span>)</h1>
   <ul data-bind="foreach: breakfasts">
-    <li data-bind="text: id"></li>
+    <li><span data-bind="text: id"></span> <select data-bind="options: $parent.mealTypes, optionsCaption: 'Meal type', value: type"></li>
+  </ul>
+  <h2>Types</h2>
+  <ul data-bind="foreach: mealTypes">
+    <li data-bind="text: $data"></li>
   </ul>
   <script type="text/javascript" src="./lib/require.js"></script>
 
@@ -27,11 +31,13 @@
     require([
       //include all specs to be run
       'knockout',
+      'lib/knockout.composeWith',
       'Memory',
       'Observable',
       'lang'
     ],
-      function(ko, MemoryStore, Observable, lang) {
+    
+      function(ko, ko_composeWith, MemoryStore, Observable, lang) {
 
         var store = window.store = Observable( new MemoryStore({
           data: [
@@ -42,8 +48,34 @@
         }));
         
         var viewModel = {
-          breakfasts: store.query({ type: 'breakfast'})
+          test: ko.observable('test value'),
+          breakfasts: store.query({ type: 'breakfast'}),
+          _allRecords: store.query(null), 
         };
+
+        function curryPlucker(key) {
+          return function(values) {
+            return values.map(function(value){ 
+              return value[key]; 
+            });
+          }
+        }
+
+        function logger(name) {
+          return function(values) {
+            console.log(name + " logger: got values: ", values);
+            return values;
+          };
+        }
+
+        viewModel.mealTypes = viewModel._allRecords.extend({ 
+          composeWith: [
+            // logger('name field'), 
+            curryPlucker('type'), 
+            lang.uniq,
+            logger('types') 
+          ] 
+        });
 
         viewModel.breakfasts.subscribe(function(resultsArray, details){
           console.log("Change to breakfasts results: ", details);

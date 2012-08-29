@@ -9,15 +9,6 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
     {id: 5, name: "five", prime: true}
   ];
 
-  function insistContains(obj) {
-    Array.prototype.slice.call(arguments, 1).forEach(function(name){
-      if(!obj.hasOwnProperty(name)) {
-        throw "Missing property: " + name;
-      }
-    });
-    return true;
-  }
-  
   describe("Observable Store Basics", function(){
     it("Loaded the expected constructors", function(){
       expect(typeof MemoryStore).toBe('function');
@@ -81,12 +72,10 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
       //  vs.changed || removedObject, removedFrom, insertedInto 
       var subscription = results.subscribe(function(resultsArray, details){
         expect(typeof details).toBe('object');
-        insistContains(details, 'previousIndex', 'newIndex', 'object');
         changes.push({previousIndex:details.previousIndex, newIndex:details.newIndex, object:details.object});
       });
       var secondSubscription = results.subscribe(function(resultsArray, details){
         expect(typeof details).toBe('object');
-        insistContains(details, 'previousIndex', 'newIndex', 'object');
         secondChanges.push({previousIndex:details.previousIndex, newIndex:details.newIndex, object:details.object});
       });
       var expectedChanges = [],
@@ -171,7 +160,6 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
               // we only do puts so previous & new indices must always been the same
               // unfortunately if id = 0, the previousIndex
               expect(typeof details).toBe('object');
-              insistContains(details, 'previousIndex', 'newIndex', 'object');
               expect(details.previousIndex).toBe(details.newIndex);
       }, true);
       store.put({id: 5, name: "-FIVE-", prime: true});
@@ -179,38 +167,37 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
     });
     
     it("Pages through results", function testPaging(t){
-      var results, opts = {count: 25, sort: [{attribute: "order"}]};
-      results = window.results = [
-          bigStore.query({}, lang.extend(Object.create(opts), {start: 0})),
-          bigStore.query({}, lang.extend(Object.create(opts), {start: 25})),
-          bigStore.query({}, lang.extend(Object.create(opts), {start: 50})),
-          bigStore.query({}, lang.extend(Object.create(opts), {start: 75}))
+      var resultPages, opts = {count: 25, sort: [{attribute: "order"}]};
+      resultPages = window.resultPages = [
+          bigStore.query({}, lang.extend({start: 0}, opts)),
+          bigStore.query({}, lang.extend({start: 25}, opts)),
+          bigStore.query({}, lang.extend({start: 50}, opts)),
+          bigStore.query({}, lang.extend({start: 75}, opts))
       ];
       var observations = [];
-      results.forEach(function(r, i){
+      resultPages.forEach(function(r, i){
           r.subscribe(function(resultArray, details){
             expect(typeof details).toBe('object');
-            insistContains(details, 'previousIndex', 'newIndex', 'object');
             observations.push({from: details.previousIndex, to: details.newIndex});
               console.log(i, " observed: ", details);
           }, true);
       });
 
       bigStore.add({id: 101, name: "one oh one", order: 2.5});
-      expect(results()[0].length).toBe(26);
-      expect(results()[1].length).toBe(25);
-      expect(results()[2].length).toBe(25);
-      expect(results()[3].length).toBe(25);
+      expect(resultPages[0]().length).toBe(26);
+      expect(resultPages[1]().length).toBe(25);
+      expect(resultPages[2]().length).toBe(25);
+      expect(resultPages[3]().length).toBe(25);
       expect(observations.length).toBe(1);
       
       bigStore.remove(101);
       expect(observations.length).toBe(2);
-      expect(results()[0].length).toBe(25);
+      expect(resultPages[0]().length).toBe(25);
 
       bigStore.add({id: 102, name: "one oh two", order: 26.5});
-      expect(results()[0].length).toBe(25);
-      expect(results()[1].length).toBe(26);
-      expect(results()[2].length).toBe(25);
+      expect(resultPages[0]().length).toBe(25);
+      expect(resultPages[1]().length).toBe(26);
+      expect(resultPages[2]().length).toBe(25);
       expect(observations.length).toBe(3);
     });
   });

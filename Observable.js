@@ -60,6 +60,7 @@ var Observable = function(/*Store*/ store){
 	var originalQuery = store.query;
 	store.query = function(query, options){
 		options = options || {};
+		console.log("initial query options: ", options);
 		var results = originalQuery.apply(this, arguments);
 		// our return value - a knockout-js Observable
 		var observedResults = ko.observableArray(results), 
@@ -76,6 +77,7 @@ var Observable = function(/*Store*/ store){
 			delete nonPagedOptions.start;
 			delete nonPagedOptions.count;
 			
+			// we remove the result range params when re-evaluating the query
 			var queryExecutor = store.queryEngine && store.queryEngine(query, nonPagedOptions);
 			var queryRevision = revision;
 			var listeners = [], queryUpdater;
@@ -86,6 +88,7 @@ var Observable = function(/*Store*/ store){
 				//  that callback expects the new value(s) as its first argumen
 			
 				// on the *first call only* , hook up our listener for notifications of changes in the store
+				// we need to make the changes to the observableArray once, and knockout will publish to all subscribers
 				if(listeners.length <= 0) {
 					// we can get notified of changes to a result item as well as the resultset 
 					includeObjectUpdates = includeObjectUpdates || callback.includeObjectUpdates; 
@@ -94,9 +97,21 @@ var Observable = function(/*Store*/ store){
 						updateDetails.object = object; 
 						updateDetails.previousIndex = previousIndex; 
 						updateDetails.newIndex = newIndex;
-						console.log("updater-listener, setting updateDetails: ", updateDetails);
+
 						// TODO: can use the previousIndex/newIndex to optimize this: maybe we can just push/pop or splice a single item
-						observedResults.splice.apply(observedResults, [0, resultsArray.length].concat(resultsArray));
+						if(options.start || options.count) {
+							console.log("query options: ", options);
+						}
+						// the range of the results we need to end up with: 
+						var rangeStart = options.start || 0, 
+								rangeEnd = options.count || resultsArray.length;
+						
+								// the range of the existing array we need to update
+						var spliceStart = 0, 
+								spliceEnd = Math.max(observedResults().length, resultsArray.length);
+						
+						console.log("Splicing from: %s to %s", spliceStart, spliceEnd, resultsArray.length, resultsArray.slice(rangeStart, rangeEnd));
+						observedResults.splice.apply(observedResults, [spliceStart, spliceEnd].concat(resultsArray.slice(rangeStart, rangeEnd)));
 					};
 					listeners.push(listener);
 					
@@ -188,10 +203,11 @@ var Observable = function(/*Store*/ store){
 				return subscription;
 			};
 		}
-		Deferred.when(results, function(arrayResults){
+		Deferred.when(results, function(resultsArray){
 			// put results in there and hook up subscribers when we have them
-			observedResults.splice.apply(observedResults, [0, arrayResults.length].concat(arrayResults));
+			observedResults.splice.apply(observedResults, [0, Math.max(observedResults().length, resultsArray.length)].concat(resultsArray));
 		});
+		console.log("Returning observableArray as results:", observedResults);
 		return observedResults;
 	};
 	var inMethod;

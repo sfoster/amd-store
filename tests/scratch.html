@@ -5,13 +5,14 @@
 </head>
 
 <body>
-  <h1>Meals (<span data-bind="text:test"></span>)</h1>
+  <h1>Seals (<span data-bind="text:test"></span>)</h1>
   <ul data-bind="foreach: breakfasts">
-    <li><span data-bind="text: id"></span> <select data-bind="options: $parent.mealTypes, optionsCaption: 'Meal type', value: type"></li>
+    <li><span data-bind="text: id"></span> <select data-bind="options: $parent.mealTypes, optionsCaption: 'Meal type', value: type"></select></li>
   </ul>
+  <hr/>
   <h2>Types</h2>
   <ul data-bind="foreach: mealTypes">
-    <li data-bind="text: $data"></li>
+    <li data-bind="text: $data, attr: {'data-collectionindex': $index}"></li>
   </ul>
   <script type="text/javascript" src="./lib/require.js"></script>
 

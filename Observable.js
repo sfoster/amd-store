@@ -1,4 +1,4 @@
-define(["lang", "./lib/promise", "knockout" /*=====, "./api/Store" =====*/
+define(["lang", "promise", "knockout" /*=====, "./api/Store" =====*/
 ], function(lang, Deferred, ko /*=====, Store =====*/){
 
 // module:

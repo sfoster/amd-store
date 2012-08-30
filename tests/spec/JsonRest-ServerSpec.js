@@ -70,7 +70,6 @@ define(['store/JsonRest', '../../lib/util'], function(JsonRest, lang){
           received++;
 
           var k;
-          console.log("Got back result.headers: ", result.headers);
           for(k in requestHeaders){
             if(!result.headers.hasOwnProperty(k) || "" + result.headers[k] !== "" + requestHeaders[k]){
               error = true;

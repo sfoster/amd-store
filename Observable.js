@@ -1,4 +1,4 @@
-define(["./lib/util", "./lib/Promise" /*=====, "./api/Store" =====*/
+define(["./lib/util", "promise" /*=====, "./api/Store" =====*/
 ], function(lang, Deferred /*=====, Store =====*/){
 
 // module:

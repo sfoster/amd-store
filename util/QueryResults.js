@@ -1,4 +1,4 @@
-define(["../lib/util", "../lib/Promise"
+define(["../lib/util", "promise"
 ], function(lang, Promise){
 
 //  module:

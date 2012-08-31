@@ -5,12 +5,14 @@
 </head>
 
 <body>
-  <h1>Seals (<span data-bind="text:test"></span>)</h1>
+  <h1>Meals (<span data-bind="text:test"></span>)</h1>
+  
+  <h2>Just Breakfasts:</h2>
   <ul data-bind="foreach: breakfasts">
-    <li><span data-bind="text: id"></span> <select data-bind="options: $parent.mealTypes, optionsCaption: 'Meal type', value: type"></select></li>
+    <li><span data-bind="text: id"></span> <select data-bind="event: { change: $parent.onMealTypeChange }, options: $parent.mealTypes, optionsCaption: 'Meal type', value: type"></select></li>
   </ul>
   <hr/>
-  <h2>Types</h2>
+  <h2>Meal-Types</h2>
   <ul data-bind="foreach: mealTypes">
     <li data-bind="text: $data, attr: {'data-collectionindex': $index}"></li>
   </ul>
@@ -23,6 +25,7 @@
         paths: {
           'dollar': './tests/lib/zepto',
           'store': '.',
+          'promise': './lib/Promise',
           'knockout': './vendor/knockout',
           'lang': './vendor/lodash',
           'spec': './tests/spec'
@@ -48,10 +51,29 @@
           ]
         }));
         
+        var allRecords = store.query(null);
+        
         var viewModel = {
           test: ko.observable('test value'),
           breakfasts: store.query({ type: 'breakfast'}),
-          _allRecords: store.query(null), 
+          onMealTypeChange: function(itemViewModel, evt){
+            // one way to do "event-delegation" on non-observable properties from a live/observable array
+            var selectElm = evt.target;
+            // get the changed value from the DOM and DOM event
+            var newValue = evt.target.options[ evt.target.selectedIndex ].value;
+            // Knockout gives us the implicated viewModel (array item)
+            // ... assign the new value, then update in the store
+            itemViewModel.type = newValue;
+            store.put(itemViewModel)
+          },
+          mealTypes: allRecords.extend({ 
+            composeWith: [
+              // logger('name field'), 
+              curryPlucker('type'), 
+              lang.uniq,
+              logger('types') 
+            ] 
+          })
         };
 
         function curryPlucker(key) {
@@ -68,15 +90,6 @@
             return values;
           };
         }
-
-        viewModel.mealTypes = viewModel._allRecords.extend({ 
-          composeWith: [
-            // logger('name field'), 
-            curryPlucker('type'), 
-            lang.uniq,
-            logger('types') 
-          ] 
-        });
 
         viewModel.breakfasts.subscribe(function(resultsArray, details){
           console.log("Change to breakfasts results: ", details);

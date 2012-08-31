@@ -16,6 +16,10 @@
   <ul data-bind="foreach: mealTypes">
     <li data-bind="text: $data, attr: {'data-collectionindex': $index}"></li>
   </ul>
+  
+  <p>Try adding some more stuff to the store: <span style="font-size: smaller; color: #888">'id' needs to be unique, for 'type' you can use an existing type or invent a new one</span></p>
+  <p><input style="width: 32em; font-size: 0.9em; color: #050" data-bind="value: newMealJson"></textarea> <button data-bind="click: onAddMealClick">Add meal</button></p>
+  
   <script type="text/javascript" src="./lib/require.js"></script>
 
   <script type="text/javascript">
@@ -56,6 +60,18 @@
         var viewModel = {
           test: ko.observable('test value'),
           breakfasts: store.query({ type: 'breakfast'}),
+          newMealJson: ko.observable('{ "id": "pancakes", "type": "second-breakfast" }'),
+          onAddMealClick: function(){
+            try {
+              console.log("meal JSON data: ", viewModel.newMealJson());
+              var data= JSON.parse(viewModel.newMealJson());
+              console.log("meal data: ", data);
+            } catch(e){
+              alert("Invalid meal object");
+              return;
+            }
+            store.add( data );
+          },
           onMealTypeChange: function(itemViewModel, evt){
             // one way to do "event-delegation" on non-observable properties from a live/observable array
             var selectElm = evt.target;

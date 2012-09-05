@@ -1,4 +1,4 @@
-define(["./lib/promisedAjax", "./lib/util", "./util/QueryResults" /*=====, "./api/Store" =====*/
+define(["dollar", "./lib/util", "./util/QueryResults" /*=====, "./api/Store" =====*/
 ], function($, lang, QueryResults /*=====, Store =====*/){
 
 //	module:

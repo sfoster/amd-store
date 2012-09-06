@@ -167,16 +167,22 @@ lang.mixin(JsonRest.prototype, {
 				query += ")";
 			}
 		}
+
+		var resultsXhr = null;
 		var results = $.ajax({
 			type: "GET",
+			beforeSend: function(xhr){
+			  resultsXhr = xhr; // XMLHttpRequest object
+			},
 			url: this.target + (query || ""),
 			dataType: "json",
 			headers: headers
 		});
 		results.total = results.then(function(){
-			var range = results.xhr.getResponseHeader("Content-Range");
+			var range = (results.xhr || resultsXhr).getResponseHeader("Content-Range");
 			return range && (range = range.match(/\/(.*)/)) && +range[1];
 		});
+
 		return QueryResults(results);
 	}
 });

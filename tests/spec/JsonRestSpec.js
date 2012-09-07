@@ -71,17 +71,14 @@ define(['store/JsonRest', '../../lib/util'], function(JsonRest, lang){
 
     it("sends sort info in the querystring when you query", function(){
       var url; 
-      var ajaxSpy = spyOn($, "ajax").andCallFake(function(options){
-        url = options.url;
-        console.log("sort request options", options);
-        var xhr = mockXhr({});
-        if(options.success) options.success({}, "ok", xhr);
-      });
-      
+      var ajaxSpy = spyOn($, "ajax").andCallThrough(); 
       var store = new JsonRest();
       store.query('foo', { sort: [{ descending: true, attribute: "xyz"  }, { descending: false, attribute: "zyx"  }] });
 
       expect(ajaxSpy).toHaveBeenCalled();
+      var req = $.ajax.mostRecentCall.args[0], 
+          url = req.url;
+
       expect(url.indexOf('xyz')).toBeGreaterThan(-1);
       expect(url.indexOf('zyx')).toBeGreaterThan(-1);
     });

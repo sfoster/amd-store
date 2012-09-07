@@ -37,6 +37,29 @@ define(['store/Memory', 'store/Observable', '../../lib/util'], function(MemorySt
   
   });
 
+  describe("Batch changes on Observable results", function(){
+    it("Notifies subscribers once for multiple changes", function(){
+      var numMatches = 0;
+      var changeCount = 0;  
+      var store = ObservableStore(new MemoryStore({
+        data: testData
+      }));
+      var results = store.query({ prime: true });
+      results.subscribe(function(resultsArray, details){
+        numMatches = resultsArray.length;
+        console.log("prime query change: ", resultsArray, details);
+        changeCount++;
+      });
+      results.batchStart();
+      store.add({id: 11, name: "eleven", prime: true});
+      store.add({id: 13, name: "thirteen", prime: true});
+      results.batchEnd();
+      
+      expect(changeCount).toBe(1);
+      expect(numMatches).toBe(5);
+    });
+  });
+
   // Ported tests from dojo/tests/store/Observable.js
   var memoryStore, store = new ObservableStore(memoryStore = new MemoryStore({ /*store.Memory*/
     data: [

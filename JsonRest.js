@@ -1,4 +1,4 @@
-define(["./lib/promisedAjax", "./lib/util", "./util/QueryResults" /*=====, "./api/Store" =====*/
+define(["dollar", "./lib/util", "./util/QueryResults" /*=====, "./api/Store" =====*/
 ], function($, lang, QueryResults /*=====, Store =====*/){
 
 //	module:
@@ -9,7 +9,7 @@ function JsonRest(options) {
 	// summary:
 	//		This is a basic store for RESTful communicating with a server through JSON
 	//		formatted data.
-	// options: dojo/store/JsonRest
+	// options: store/JsonRest
 	//		This provides any configuration information that will be mixed into the store
 	this.headers = {};
 	lang.mixin(this, options);
@@ -167,16 +167,23 @@ lang.mixin(JsonRest.prototype, {
 				query += ")";
 			}
 		}
+
+		var resultsXhr = null;
 		var results = $.ajax({
 			type: "GET",
+			beforeSend: function(xhr){
+				resultsXhr = xhr; // XMLHttpRequest object
+			},
 			url: this.target + (query || ""),
 			dataType: "json",
 			headers: headers
 		});
+
 		results.total = results.then(function(){
-			var range = results.xhr.getResponseHeader("Content-Range");
+			var range = (results.xhr || resultsXhr).getResponseHeader("Content-Range");
 			return range && (range = range.match(/\/(.*)/)) && +range[1];
 		});
+
 		return QueryResults(results);
 	}
 });
